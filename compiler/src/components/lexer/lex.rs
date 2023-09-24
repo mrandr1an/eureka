@@ -6,8 +6,7 @@ use std::iter::Peekable;
 pub struct Lex
 {
 }
-/// Default implementation of the Lex trait that should be used on &str and Strings
-/// lex always returns a Lexed
+
 impl Lex
 {
     /// Lexes input into a data-structure that is easily parsable 
@@ -16,9 +15,7 @@ impl Lex
         T: AsRef<str>
     {
         let input_iter = &mut input.as_ref().chars().peekable();
-        let mut token_buffer = String::new();
-        let mut line_buffer: VecDeque<TokenType> = VecDeque::new();
-        let mut lines_buffer: VecDeque<Line> = Self::lex_lines(input_iter);
+        let  lines_buffer: VecDeque<Line> = Self::lex_lines(input_iter);
         for line in lines_buffer
         {
             println!("{}",line);
@@ -351,14 +348,6 @@ impl Lex
         {
         (Some(Line::new(pos,indent,contents)), Some(indent_of_next))
         }
-    }
-
-    fn lex_famillies<I>(input: &mut Peekable<I>) -> ()
-    where
-        I: Iterator<Item = char>
-    {
-        //unsorted deques of lines
-        let mut lines = Self::lex_lines(input);
-    }
+    } 
 }
 
