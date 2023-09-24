@@ -1,19 +1,19 @@
 use super::line::Line;
 
-pub struct Familly<'a>
+pub struct Familly
 {
     parent: Line,
-    child: Option<&'a Familly<'a>>  
+    child: Option<Vec<Familly>>  
 }
 
-impl<'a> Familly<'a>
+impl Familly
 {
-    fn new(parent: Line, child: &'a Familly<'a>) -> Self
+    fn new(parent: Line) -> Self
     {
         Self
         {
             parent,
-            child: Some(child),
+            child: Some(Vec::new()),
         }
     }
 }

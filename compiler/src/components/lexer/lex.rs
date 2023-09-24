@@ -359,9 +359,6 @@ impl Lex
     {
         //unsorted deques of lines
         let mut lines = Self::lex_lines(input);
-        //X axis
-
-        //Y axis
     }
 }
 
