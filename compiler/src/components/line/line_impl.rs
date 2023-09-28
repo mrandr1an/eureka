@@ -11,14 +11,14 @@ impl<'a> fmt::Display for Line
         { 
             if index == (self.contents.len() - 1)
             {
-                let _ = write!(f, "{}\n", token);
+                let _ = write!(f, "{}\t", token);
+                let _ = write!(f,"Indent:{} Number:{}\n",self.indent,self.number);
             }
             else
             {
                 let _ = write!(f, "{}", token);
             }
         }
-        let _ = write!(f,"Line|Indetation|Linenumber|\n");
-        write!(f,"    |    {}    |    {}    |",self.indent, self.number)
+        Ok(())
     }
 }

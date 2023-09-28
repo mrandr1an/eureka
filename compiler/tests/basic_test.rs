@@ -16,7 +16,8 @@ fn token_eq()
 #[test]
 fn lex_test()
 {
-    let input = "set main\ngoodbye +    hello\ni+wow \n    kafig";
+    let input = "set main\n f:\n  x+1\n y:\n  x-1\n d: d\n +1\n   c+1\n  3+2";
+
     Lex::lex(input);
 }
 

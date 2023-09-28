@@ -1,0 +1,1 @@
+Inspect<Zip<std::collections::vec_deque::Iter<'_, Line>, Skip<std::collections::vec_deque::Iter<'_, Line>>>, [closure@compiler/src/components/lexer/lex.rs:399:22: 399:39]>

@@ -1,5 +1,8 @@
 use crate::components::token::tokentype::{TokenType, Separator, Operator};
 use crate::components::line::line::Line;
+use crate::components::line::scope::Scope;
+
+use std::rc::Rc;
 use std::collections::VecDeque;
 use std::iter::Peekable;
 
@@ -10,17 +13,18 @@ pub struct Lex
 impl Lex
 {
     /// Lexes input into a data-structure that is easily parsable 
-    pub fn lex<T>(input: T)
+    pub fn lex<T>(input: T) -> ()
     where
         T: AsRef<str>
     {
         let input_iter = &mut input.as_ref().chars().peekable();
-        let  lines_buffer: VecDeque<Line> = Self::lex_lines(input_iter);
-        for line in lines_buffer
+        let lines = Self::lex_lines(input_iter);
+        let scopes = Self::transform(lines);
+        for scope in scopes
         {
-            println!("{}",line);
+            println!("{}", scope)
         }
-   }
+    }
 
     /// Gets a peekable iterator of some input and iterates over it (Items are just single characters)
     /// until a separator or a space is detected depending on the situation below.
@@ -348,6 +352,29 @@ impl Lex
         {
         (Some(Line::new(pos,indent,contents)), Some(indent_of_next))
         }
-    } 
+    }
+
+    fn transform(mut lines: VecDeque<Line>) -> Vec<Rc<Scope>>
+    {
+        let mut scopes: Vec<Rc<Scope>> = Vec::new();
+        while let Some(current_line) = lines.pop_front()
+        {
+            let current_in = current_line.indent;
+            let current_scope = Scope::new(current_line);
+            for next_line in lines.iter()
+            {
+                if current_in <  next_line.indent
+                {
+                   current_scope.insert_child(next_line.clone())
+                }
+                else
+                {
+                    break;
+                }
+            }
+            scopes.push(current_scope);
+        }
+        scopes
+    }
 }
 
