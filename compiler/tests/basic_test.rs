@@ -1,6 +1,6 @@
 use compiler::components::token::tokentype::*;
 use compiler::components::error::eureka_error;
-use compiler::components::lexer::lex::Lex;
+use compiler::components::lexer::lex::{Lex};
 
 /// Checks if all tokens can be converted to strings
 /// and displayed properlyt]
@@ -16,8 +16,18 @@ fn token_eq()
 #[test]
 fn lex_test()
 {
-    let input = "set main\n f:\n  x+1\n y:\n  x-1\n d: d\n +1\n   c+1\n  3+2";
-
-    Lex::lex(input);
+    let input = "defining module main
+  f(x)+1
+  l(x)
+ f(x)
+  y(x)
+ d(v)";
+        let l = Lex::lex(input);
+        // let mut iter= l.current.iter();
+        // let _ = iter.next().unwrap();
+        // while let Some(s) = iter.next()
+        // {
+        //     println!("{}",s);
+        // }
 }
 

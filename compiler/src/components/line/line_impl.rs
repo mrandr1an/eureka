@@ -1,6 +1,7 @@
 use std::fmt;
 
 use super::line::Line;
+use crate::components::token::tokentype::TokenType;
 
 impl<'a> fmt::Display for Line
 {
@@ -20,5 +21,17 @@ impl<'a> fmt::Display for Line
             }
         }
         Ok(())
+    }
+}
+
+impl Iterator for Line {
+    type Item = TokenType;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(item) = self.contents.pop_front() {
+            Some(item)
+        } else {
+            None
+        }
     }
 }

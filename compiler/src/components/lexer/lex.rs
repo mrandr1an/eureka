@@ -8,28 +8,38 @@ use std::iter::Peekable;
 
 pub struct Lex
 {
+  pub root: Rc<Scope>,
+  pub index: usize,
 }
+
 
 impl Lex
 {
     /// Lexes input into a data-structure that is easily parsable 
-    pub fn lex<T>(input: T) -> ()
+    pub fn lex<T>(input: T) -> Option<Self>
     where
         T: AsRef<str>
     {
         let input_iter = &mut input.as_ref().chars().peekable();
         let lines = Self::lex_lines(input_iter);
-        let scopes = Self::transform(lines);
-        for scope in scopes
+        let scopes = Self::lex_root(lines);
+        match scopes
         {
-            println!("{}", scope)
+            Some(root) =>
+            {
+                Some(Self
+                {
+                    root,
+                    index: 0,
+                })
+            },
+            None => None 
         }
     }
 
     /// Gets a peekable iterator of some input and iterates over it (Items are just single characters)
     /// until a separator or a space is detected depending on the situation below.
-    /// It by design should never fail or panic but returns TokenType::Done when there is nothing more to lex.
-    /// # Separators
+    /// It by design should never fail or panic but returns TokenType::Done when there is nothing more to lex. /// # Separators
     ///  A separator can only stop being iterated after a space
     /// # Non Separators
     ///  A non separator (alphanumerical literals) stop being iterated after a seperator is detected
@@ -354,27 +364,81 @@ impl Lex
         }
     }
 
-    fn transform(mut lines: VecDeque<Line>) -> Vec<Rc<Scope>>
+    fn lex_root(mut lines: VecDeque<Line>) -> Option<Rc<Scope>>
     {
-        let mut scopes: Vec<Rc<Scope>> = Vec::new();
-        while let Some(current_line) = lines.pop_front()
+        let root = match lines.pop_front()
         {
-            let current_in = current_line.indent;
-            let current_scope = Scope::new(current_line);
-            for next_line in lines.iter()
+            Some(line) => Some(Self::lex_rest(lines,Scope::new(line,None))),
+            None => None,
+        };
+
+        root
+    }
+
+    fn lex_rest(mut lines: VecDeque<Line>, mut previous: Rc<Scope>) -> Rc<Scope>
+    {
+        //Check if parent is root
+        if previous.parent.is_none()
+        {
+            //Then its root
+            if let Some(current) = lines.pop_front()
             {
-                if current_in <  next_line.indent
+                let current_scope = Scope::new(current, Some(Rc::clone(&previous)));
+                previous.insert_child(Rc::clone(&current_scope));
+                Self::lex_rest(lines,Rc::clone(&current_scope))
+            }
+            else
+            {
+                previous
+            }
+        }
+        else
+        {
+            if let Some(current) = lines.pop_front()
+            {
+                if current.indent > previous.data.indent
                 {
-                   current_scope.insert_child(next_line.clone())
+                   let current_scope = Scope::new(current,Some(Rc::clone(&previous)));
+                   previous.insert_child(Rc::clone(&current_scope));
+                   Self::lex_rest(lines, Rc::clone(&current_scope))
                 }
                 else
                 {
-                    break;
+                    //Check to see which parent of previous is the parent of current line
+                    Self::lex_rest(lines,Self::insert_to_parent(previous,current))
                 }
             }
-            scopes.push(current_scope);
+            else
+            {
+                previous
+            }
         }
-        scopes
     }
-}
 
+    fn insert_to_parent(previous: Rc<Scope>, current: Line) -> Rc<Scope>
+    {
+        match &previous.parent
+        {
+            Some(parent) =>
+            {
+                if parent.data.indent < current.indent
+                {
+                    let current_scope = Scope::new(current, Some(Rc::clone(&parent)));
+                    parent.insert_child(Rc::clone(&current_scope));
+                    Rc::clone(&current_scope)
+                }
+                else
+                {
+                    Self::insert_to_parent(Rc::clone(parent),current)
+                }
+            },
+            None =>
+            {
+                //previous is root
+                let current_scope = Scope::new(current, Some(Rc::clone(&previous)));
+                previous.insert_child(Rc::clone(&current_scope));
+                current_scope
+            },
+        }
+    } 
+}
