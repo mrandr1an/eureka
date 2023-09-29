@@ -1,6 +1,7 @@
 use compiler::components::token::tokentype::*;
 use compiler::components::error::eureka_error;
 use compiler::components::lexer::lex::{Lex};
+use compiler::parser::*;
 
 /// Checks if all tokens can be converted to strings
 /// and displayed properlyt]
@@ -23,11 +24,16 @@ fn lex_test()
   y(x)
  d(v)";
         let l = Lex::lex(input);
-        // let mut iter= l.current.iter();
-        // let _ = iter.next().unwrap();
-        // while let Some(s) = iter.next()
-        // {
-        //     println!("{}",s);
-        // }
+        if let Some(s) = l
+        {
+            let r = s.root.toproot();
+            println!("{}",r);
+            let c = r.edge.borrow();
+            let mut e = c.iter();
+            while let Some(v) = e.next()
+            {
+                println!("{}",v);
+            }
+        }
 }
 

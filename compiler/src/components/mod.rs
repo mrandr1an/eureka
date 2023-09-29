@@ -3,7 +3,6 @@
 //! 
 //!
 pub mod token;
-pub mod parsable;
 pub mod error;
 pub mod line;
 pub mod lexer;

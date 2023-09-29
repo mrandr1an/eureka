@@ -4,5 +4,6 @@
 //! - [Rust documentation website](https://doc.rust-lang.org/rustdoc/how-to-write-documentation.html)
 //! - [CommonMark](https://commonmark.org/help/)
 pub mod components;
+pub mod parser;
 
 
