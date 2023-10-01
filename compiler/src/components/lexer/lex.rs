@@ -9,9 +9,7 @@ use std::iter::Peekable;
 pub struct Lex
 {
   pub root: Rc<Scope>,
-  pub index: usize,
 }
-
 
 impl Lex
 {
@@ -30,7 +28,6 @@ impl Lex
                 Some(Self
                 {
                     root,
-                    index: 0,
                 })
             },
             None => None 

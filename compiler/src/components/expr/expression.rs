@@ -10,15 +10,22 @@ pub enum Expression
 
 pub enum LocExpr
 {
-  //import {modulename} from {modulepath}
-  Import(TokenType,TokenType, TokenType, TokenType),
-  //define module {modulename}
-  Init(TokenType,TokenType,TokenType),
+  //import {modulename} from {modulepath} 
+  Import(Operator,Value, Operator, Value),
+  //define {modulename}
+  Init(Operator,Value),
 }
 
 pub enum OpExpr
 {
  BinaryExpr(Box<OpExpr>,Operator,Box<OpExpr>),
  UnaryL(Box<OpExpr>, Operator),
- UnaryR(Operator, Box<OpExpr>),
+ UnaryR(Operator, Box<OpExpr>), 
+ WrapperExpr(Operator,Box<OpExpr>,Operator),
+ Command(Operator),
+}
+
+pub enum DeclExpr
+{
+  Def(Value, Operator)
 }

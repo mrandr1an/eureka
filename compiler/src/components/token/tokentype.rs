@@ -60,6 +60,9 @@ pub enum Operator
     Halt, // halt
     Data, // data
     NotOp, // this is not part of the language and returns error
+    /* Added later */
+    From, // from
+    DoubleColon, // ::
 }            
 
 #[derive(Debug, PartialEq,Clone)]

@@ -15,6 +15,12 @@ fn token_eq()
 }
 
 #[test]
+fn line_iterate()
+{
+ 
+}
+
+#[test]
 fn lex_test()
 {
     let input = "defining module main
@@ -27,12 +33,22 @@ fn lex_test()
         if let Some(s) = l
         {
             let r = s.root.toproot();
-            println!("{}",r);
             let c = r.edge.borrow();
             let mut e = c.iter();
             while let Some(v) = e.next()
             {
-                println!("{}",v);
+                let mut a = v.data.contents.iter();
+                match a.next()
+                {
+                    Some(token) =>
+                    {
+                        println!("{}",token);
+                    },
+                    None =>
+                    {
+                        println!("Nothing here anymore")
+                    }
+                }
             }
         }
 }

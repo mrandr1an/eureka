@@ -199,6 +199,8 @@ where
             "<" => Operator::Le,
             ">=" => Operator::GrEq,
             "<=" => Operator::LeEq,
+            "::" => Operator::DoubleColon,
+            "from" => Operator::From,
             _ => Operator::NotOp, 
         }
     }
@@ -322,6 +324,8 @@ impl fmt::Display for Operator
             Operator::Otherwise => write!(f, "otherwise"),
             Operator::Halt => write!(f, "halt"),
             Operator::NotOp => write!(f, "Error NotOp"),
+            Operator::From => write!(f, "from"),
+            Operator::DoubleColon => write!(f, "::"),
         }
     }
 }

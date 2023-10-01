@@ -6,11 +6,7 @@ use std::rc::Rc;
 /// - Bottom->Up
 /// - Left->Right
 /// Iterator implementation for Lex 
-impl Iterator for Lex
+struct IterLex
 {
-    type Item = Scope;
-    fn next(&mut self) -> Option<Self::Item>
-    {
-        todo!()
-    }
+    lex: Lex,
 }
