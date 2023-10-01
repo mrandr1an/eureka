@@ -263,7 +263,7 @@ impl Lex
                 {
                     TokenType::Done
                 } 
-            } 
+            }
             else
             {
                 if ch == ' '

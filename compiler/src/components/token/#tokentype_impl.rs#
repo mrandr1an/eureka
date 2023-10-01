@@ -148,9 +148,7 @@ where
 }
 
 
-impl<T> From<T> for Operator
-where
-    T: AsRef<str>,
+impl<T> From<T> for Operator where T: AsRef<str>,
 {
     fn from(value: T) -> Self
     {

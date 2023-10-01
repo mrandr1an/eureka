@@ -11,7 +11,9 @@ fn token_eq()
     let plus = "+";
     assert_eq!(TokenType::from(plus), TokenType::Sep(Ok(Operator::Plus)));
     let indent = "\n     ";
-    assert_eq!(TokenType::from(indent), TokenType::Sep(Err(Separator::Indent(5))))
+    assert_eq!(TokenType::from(indent), TokenType::Sep(Err(Separator::Indent(5))));
+    let paren = "(";
+    assert_eq!(TokenType::from(paren), TokenType::Sep(Ok(Operator::LParen)));
 }
 
 #[test]
@@ -27,28 +29,14 @@ fn lex_test()
   f(x)+1
   l(x)
  f(x)
-  y(x)
- d(v)";
+ y(x)
+ \"d(v)\"";
         let l = Lex::lex(input);
         if let Some(s) = l
         {
-            let r = s.root.toproot();
-            let c = r.edge.borrow();
-            let mut e = c.iter();
-            while let Some(v) = e.next()
+            for t in s.root.data.contents.iter()
             {
-                let mut a = v.data.contents.iter();
-                match a.next()
-                {
-                    Some(token) =>
-                    {
-                        println!("{}",token);
-                    },
-                    None =>
-                    {
-                        println!("Nothing here anymore")
-                    }
-                }
+                println!("{}", t)
             }
         }
 }

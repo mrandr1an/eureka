@@ -60,7 +60,12 @@ pub enum Operator
     Halt, // halt
     Data, // data
     NotOp, // this is not part of the language and returns error
-    /* Added later */
+    Infix, // infix
+    Prefix, // prefix
+    Postfix, // postfix
+    Sequence, // seq
+    Fn, // fn
+    Val, // val
     From, // from
     DoubleColon, // ::
 }            
