@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["tokentype","tokentype_impl"]};

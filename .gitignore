@@ -1,7 +1,0 @@
-# Ignore Emacs backup files
-*~
-*.bak
-*.swp
-*.orig
-*.rej
-#*
