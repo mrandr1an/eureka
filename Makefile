@@ -20,3 +20,4 @@ runVMtest: libruntime.a runtime.o
 
 clean:
 	@rm -f *.o *.a
+	@rm runVMtest
