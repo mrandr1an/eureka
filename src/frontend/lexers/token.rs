@@ -1,9 +1,4 @@
-use std::{marker::PhantomData, ops::Range};
-
-#[derive(Debug)]
-pub struct Greek;
-#[derive(Debug)]
-pub struct English;
+use std::ops::Range;
 
 pub trait TokenDelim {
     fn is_delim(&self) -> bool;
@@ -48,12 +43,12 @@ impl<'a> Lexeme<'a> {
 }
 
 #[derive(Debug)]
-pub struct Token<'a, Language> {
+pub struct Token<'a> {
     pub lexeme: Lexeme<'a>,
-    pub kind: TokenKind<Language>,
+    pub kind: TokenKind,
 }
 
-impl<'a> Token<'a, Greek> {
+impl<'a> Token<'a> {
     pub fn new(range: Range<usize>, slice: &'a str) -> Self {
         Self {
             lexeme: Lexeme::new(slice, range),
@@ -62,101 +57,52 @@ impl<'a> Token<'a, Greek> {
     }
 }
 
-impl From<&str> for TokenKind<Greek> {
+impl From<&str> for TokenKind {
     fn from(value: &str) -> Self {
         match value {
             /* Reserved Operators */
-            "+" => TokenKind::new(TokenVariant::Reserved(Reserved::Op(Operator::Infix(
-                Infix::Add,
-            )))),
-            "-" => TokenKind::new(TokenVariant::Reserved(Reserved::Op(Operator::Infix(
-                Infix::Sub,
-            )))),
-            "*" => TokenKind::new(TokenVariant::Reserved(Reserved::Op(Operator::Infix(
-                Infix::Mul,
-            )))),
-            "/" => TokenKind::new(TokenVariant::Reserved(Reserved::Op(Operator::Infix(
-                Infix::Div,
-            )))),
-            "!" => TokenKind::new(TokenVariant::Reserved(Reserved::Op(Operator::Postfix(
-                Postfix::Fact,
-            )))),
-            "," => TokenKind::new(TokenVariant::Reserved(Reserved::Op(Operator::Postfix(
-                Postfix::Comma,
-            )))),
-            "." => TokenKind::new(TokenVariant::Reserved(Reserved::Op(Operator::Postfix(
-                Postfix::Dot,
-            )))),
-            ".." => TokenKind::new(TokenVariant::Reserved(Reserved::Op(Operator::Postfix(
-                Postfix::DotDot,
-            )))),
-            "&" => TokenKind::new(TokenVariant::Reserved(Reserved::Op(Operator::Prefix(
-                Prefix::AdrOf,
-            )))),
-            "(" => TokenKind::new(TokenVariant::Reserved(Reserved::Op(Operator::ParenL))),
-            ")" => TokenKind::new(TokenVariant::Reserved(Reserved::Op(Operator::ParenR))),
-            "[" => TokenKind::new(TokenVariant::Reserved(Reserved::Op(Operator::BracketL))),
-            "]" => TokenKind::new(TokenVariant::Reserved(Reserved::Op(Operator::BracketR))),
-            "{" => TokenKind::new(TokenVariant::Reserved(Reserved::Op(Operator::CBracketL))),
-            "}" => TokenKind::new(TokenVariant::Reserved(Reserved::Op(Operator::CBracketR))),
-            "\"" => TokenKind::new(TokenVariant::Reserved(Reserved::Op(Operator::DoubleQ))),
-            "'" => TokenKind::new(TokenVariant::Reserved(Reserved::Op(Operator::SingleQ))),
+            "+" => TokenKind::Reserved(Reserved::Op(Operator::Infix(Infix::Add))),
+            "-" => TokenKind::Reserved(Reserved::Op(Operator::Infix(Infix::Sub))),
+            "*" => TokenKind::Reserved(Reserved::Op(Operator::Infix(Infix::Mul))),
+            "/" => TokenKind::Reserved(Reserved::Op(Operator::Infix(Infix::Div))),
+            "!" => TokenKind::Reserved(Reserved::Op(Operator::Postfix(Postfix::Fact))),
+            "," => TokenKind::Reserved(Reserved::Op(Operator::Postfix(Postfix::Comma))),
+            "." => TokenKind::Reserved(Reserved::Op(Operator::Postfix(Postfix::Dot))),
+            ".." => TokenKind::Reserved(Reserved::Op(Operator::Postfix(Postfix::DotDot))),
+            "&" => TokenKind::Reserved(Reserved::Op(Operator::Prefix(Prefix::AdrOf))),
+            "(" => TokenKind::Reserved(Reserved::Op(Operator::ParenL)),
+            ")" => TokenKind::Reserved(Reserved::Op(Operator::ParenR)),
+            "[" => TokenKind::Reserved(Reserved::Op(Operator::BracketL)),
+            "]" => TokenKind::Reserved(Reserved::Op(Operator::BracketR)),
+            "{" => TokenKind::Reserved(Reserved::Op(Operator::CBracketL)),
+            "}" => TokenKind::Reserved(Reserved::Op(Operator::CBracketR)),
+            "\"" => TokenKind::Reserved(Reserved::Op(Operator::DoubleQ)),
+            "'" => TokenKind::Reserved(Reserved::Op(Operator::SingleQ)),
             /* Reserved keywords */
-            "ΣΥΝΑΡΤΗΣΗ" => {
-                TokenKind::new(TokenVariant::Reserved(Reserved::Keyword(Keyword::Function)))
-            }
-            "ΜΕΘΟΔΟΣ" => {
-                TokenKind::new(TokenVariant::Reserved(Reserved::Keyword(Keyword::Method)))
-            }
-            "ΔΙΑΔΙΚΑΣΙΑ" => TokenKind::new(TokenVariant::Reserved(Reserved::Keyword(
-                Keyword::Procedure,
-            ))),
-            "ΣΥΝΕΝΩΣΗ" => TokenKind::new(TokenVariant::Reserved(Reserved::Keyword(
-                Keyword::Aggregate,
-            ))),
-            "ΑΘΡΟΙΣΜΑ" => {
-                TokenKind::new(TokenVariant::Reserved(Reserved::Keyword(Keyword::Sum)))
-            }
-            "ΕΣΤΩ" => TokenKind::new(TokenVariant::Reserved(Reserved::Keyword(Keyword::Let))),
-            "ΑΠΟ" => TokenKind::new(TokenVariant::Reserved(Reserved::Keyword(Keyword::From))),
-            "ϰ" => TokenKind::new(TokenVariant::Reserved(Reserved::Keyword(Keyword::Goto))),
+            "ΣΥΝΑΡΤΗΣΗ" => TokenKind::Reserved(Reserved::Keyword(Keyword::Function)),
+            "ΜΕΘΟΔΟΣ" => TokenKind::Reserved(Reserved::Keyword(Keyword::Method)),
+            "ΔΙΑΔΙΚΑΣΙΑ" => TokenKind::Reserved(Reserved::Keyword(Keyword::Procedure)),
+            "ΣΥΝΕΝΩΣΗ" => TokenKind::Reserved(Reserved::Keyword(Keyword::Aggregate)),
+            "ΑΘΡΟΙΣΜΑ" => TokenKind::Reserved(Reserved::Keyword(Keyword::Sum)),
+            "ΕΣΤΩ" => TokenKind::Reserved(Reserved::Keyword(Keyword::Let)),
+            "ΑΠΟ" => TokenKind::Reserved(Reserved::Keyword(Keyword::From)),
+            "ϰ" => TokenKind::Reserved(Reserved::Keyword(Keyword::Goto)),
             /* Reserved types */
-            "ΠΡΑΓΜΑΤΙΚΟΣ" => {
-                TokenKind::new(TokenVariant::Builtin(Builtin::Type(Type::Real)))
-            }
-            "ΧΑΡΑΚΤΗΡΑΣ" => {
-                TokenKind::new(TokenVariant::Builtin(Builtin::Type(Type::Char)))
-            }
+            "ΠΡΑΓΜΑΤΙΚΟΣ" => TokenKind::Builtin(Builtin::Type(Type::Real)),
+            "ΧΑΡΑΚΤΗΡΑΣ" => TokenKind::Builtin(Builtin::Type(Type::Char)),
             /* Reserved procedure/functions/methods */
-            "ΕΚΤΥΠΩΣΕ" => {
-                TokenKind::new(TokenVariant::Builtin(Builtin::Function(Function::Print)))
-            }
+            "ΕΚΤΥΠΩΣΕ" => TokenKind::Builtin(Builtin::Function(Function::Print)),
             /*Non reserved at lexing time */
             token => match token.parse::<i64>() {
-                Ok(i) => TokenKind::new(TokenVariant::Number(i)),
-                Err(_err) => TokenKind::new(TokenVariant::Unknown),
+                Ok(i) => TokenKind::Number(i),
+                Err(_err) => TokenKind::Unknown,
             },
         }
     }
 }
 
-#[derive(Debug)]
-pub struct TokenKind<Language> {
-    _mark: PhantomData<Language>,
-    pub variant: TokenVariant,
-}
-
-impl TokenKind<Greek> {
-    fn new(variant: TokenVariant) -> Self {
-        Self {
-            _mark: PhantomData,
-            variant,
-        }
-    }
-}
-
 #[derive(Debug, Eq, PartialEq)]
-pub enum TokenVariant {
+pub enum TokenKind {
     //Reserved Keywords
     Reserved(Reserved),
     //Types, values, functions generated "automagically" from the compiler

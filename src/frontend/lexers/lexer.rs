@@ -1,36 +1,108 @@
 use std::iter::Peekable;
 
-use super::{
-    greek::Greek,
-    token::{Greek as G, Token},
-};
+use unicode_segmentation::{GraphemeIndices, UnicodeSegmentation};
 
-pub struct Tokens<'lexer, Language, Lexer: Iterator<Item = Token<'lexer, Language>>> {
-    pub name: &'lexer str,
-    pub len: usize,
-    pub src: &'lexer str,
-    inner: Peekable<Lexer>,
+use super::token::{Token, TokenDelim};
+
+pub struct Lexer<'lexer> {
+    name: &'lexer str,
+    src: &'lexer str,
+    offset: usize,
+    inner: Peekable<GraphemeIndices<'lexer>>,
 }
 
-impl<'lexer> Tokens<'lexer, G, Greek<'lexer>> {
-    pub fn new(input: &'lexer str, name: &'lexer str) -> Self {
+impl<'lexer> Lexer<'lexer> {
+    pub fn new(name: &'lexer str, src: &'lexer str) -> Self {
         Self {
             name,
-            len: name.len(),
-            src: input,
-            inner: Greek::new(input).peekable(),
+            src,
+            offset: 0,
+            inner: src.grapheme_indices(true).peekable(),
+        }
+    }
+
+    fn lex(&mut self) -> Option<<Self as Iterator>::Item> {
+        match self.inner.next() {
+            Some((i, c)) if c.is_delim() => {
+                self.offset = i;
+                self.lex_delim(c)
+            }
+            Some((i, _)) => {
+                self.offset = i;
+                self.lex_token()
+            }
+            None => Some(Token::new(
+                self.offset..self.src.len() - 1,
+                &self.src[self.offset..],
+            )),
+        }
+    }
+
+    fn lex_delim(&mut self, c: &str) -> Option<<Self as Iterator>::Item> {
+        if c == "." {
+            if let Some((i, ".")) = self.inner.peek() {
+                let t = Some(Token::new(
+                    self.offset..i + ".".len(),
+                    &self.src[self.offset..i + ".".len()],
+                ));
+                self.inner.next();
+                t
+            } else {
+                Some(Token::new(
+                    self.offset..self.offset,
+                    &self.src[self.offset..self.offset + c.len()],
+                ))
+            }
+        } else {
+            Some(Token::new(
+                self.offset..self.offset,
+                &self.src[self.offset..self.offset + c.len()],
+            ))
+        }
+    }
+
+    fn lex_token(&mut self) -> Option<<Self as Iterator>::Item> {
+        while let Some((i, c)) = self.inner.peek() {
+            if c.is_delim() {
+                return Some(Token::new(
+                    self.offset..(*i - 1),
+                    &self.src[self.offset..*i],
+                ));
+            } else {
+                self.inner.next();
+            }
+        }
+        Some(Token::new(
+            self.offset..self.src.len() - 1,
+            &self.src[self.offset..],
+        ))
+    }
+}
+
+impl<'lexer> Iterator for Lexer<'lexer> {
+    type Item = Token<'lexer>;
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.inner.peek() {
+            Some((i, " ")) => {
+                self.offset = *i + " ".len();
+                self.inner.next();
+                self.next()
+            }
+            Some((_, _)) => self.lex(),
+            None => None,
         }
     }
 }
 
-impl<'lexer, Language, Lexer: Iterator<Item = Token<'lexer, Language>>>
-    Tokens<'lexer, Language, Lexer>
-{
-    pub fn next(&mut self) -> Option<Token<'lexer, Language>> {
-        self.inner.next()
-    }
+#[cfg(test)]
+mod test {
+    use super::Lexer;
 
-    pub fn peek(&mut self) -> Option<&Token<'lexer, Language>> {
-        self.inner.peek()
+    #[test]
+    fn lex() {
+        let lexer = Lexer::new("main", "ΣΥΝΑΡΤΗΣΗ ΡΙΖΑ(): 2 + 2.");
+        for token in lexer {
+            println!("{:#?}", token)
+        }
     }
 }
