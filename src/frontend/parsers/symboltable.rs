@@ -170,6 +170,4 @@ impl<'a> Display for Table<'a> {
 }
 
 #[cfg(test)]
-mod test {
-
-}
+mod test {}

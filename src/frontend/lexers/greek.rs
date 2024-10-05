@@ -2,38 +2,19 @@ use std::iter::Peekable;
 
 use unicode_segmentation::{GraphemeIndices, UnicodeSegmentation};
 
-use super::{
-    lexer::Lexer,
-    token::{Greek as GreekToken, Token, TokenDelim},
-};
-
-impl<'lexer> Lexer for Greek<'lexer> {
-    fn origin(&self) -> String {
-        self.origin_name.to_string()
-    }
-
-    fn len(&self) -> usize {
-        self.input.len()
-    }
-
-    fn input(&self) -> String {
-        self.input.to_string()
-    }
-}
+use super::token::{Greek as GreekToken, Token, TokenDelim};
 
 #[derive(Debug)]
 pub struct Greek<'lexer> {
     pub input: &'lexer str,
-    origin_name: &'lexer str,
     inner: Peekable<GraphemeIndices<'lexer>>,
     offset: usize,
 }
 
 impl<'lexer> Greek<'lexer> {
-    pub fn new(input: &'lexer str, origin_name: &'lexer str) -> Self {
+    pub fn new(input: &'lexer str) -> Self {
         Self {
             input,
-            origin_name,
             inner: input.grapheme_indices(true).peekable(),
             offset: 0,
         }
@@ -118,7 +99,7 @@ mod tests {
 
     #[test]
     fn lex_test() {
-        let mut lexer = Greek::new("Hello + friend = maybe", "test");
+        let mut lexer = Greek::new("Hello + friend = maybe");
         println!("{:#?}", lexer.next());
         println!("{:#?}", lexer.next());
         println!("{:#?}", lexer.next());
@@ -128,7 +109,7 @@ mod tests {
 
     #[test]
     fn lex_doubledot() {
-        let mut lexer = Greek::new("Hello + friend. - ma.. = maybe", "test");
+        let mut lexer = Greek::new("Hello + friend. - ma.. = maybe");
         println!("{:#?}", lexer.next());
         println!("{:#?}", lexer.next());
         println!("{:#?}", lexer.next());
@@ -141,7 +122,7 @@ mod tests {
 
     #[test]
     fn lex_nowhitespace() {
-        let mut lexer = Greek::new("Hello+friend=maybe", "test");
+        let mut lexer = Greek::new("Hello+friend=maybe");
         println!("{:#?}", lexer.next());
         println!("{:#?}", lexer.next());
         println!("{:#?}", lexer.next());
@@ -151,7 +132,7 @@ mod tests {
 
     #[test]
     fn lex_singletokens() {
-        let mut lexer = Greek::new("+-*/&!=.", "test");
+        let mut lexer = Greek::new("+-*/&!=.");
         println!("{:#?}", lexer.next());
         println!("{:#?}", lexer.next());
         println!("{:#?}", lexer.next());
@@ -161,7 +142,7 @@ mod tests {
 
     #[test]
     fn lex_string() {
-        let mut lexer = Greek::new("32 \"hello world\"", "test");
+        let mut lexer = Greek::new("32 \"hello world\"");
         println!("{:#?}", lexer.next());
         println!("{:#?}", lexer.next());
         println!("{:#?}", lexer.next());

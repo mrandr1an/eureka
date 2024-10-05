@@ -6,7 +6,7 @@ use std::{
 use crate::frontend::lexers::token::Lexeme;
 
 #[derive(Clone)]
-pub struct Identifier<'id>(Lexeme<'id>);
+pub struct Identifier<'id>(pub Lexeme<'id>);
 
 impl<'id> Display for Identifier<'id> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
