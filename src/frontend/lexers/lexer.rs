@@ -6,9 +6,9 @@ use super::token::{Token, TokenDelim};
 
 #[derive(Clone)]
 pub struct Lexer<'lexer> {
-    name: &'lexer str,
-    src: &'lexer str,
-    offset: usize,
+    pub name: &'lexer str,
+    pub src: &'lexer str,
+    pub offset: usize,
     inner: Peekable<GraphemeIndices<'lexer>>,
 }
 
