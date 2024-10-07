@@ -4,6 +4,7 @@ use unicode_segmentation::{GraphemeIndices, UnicodeSegmentation};
 
 use super::token::{Token, TokenDelim};
 
+#[derive(Clone)]
 pub struct Lexer<'lexer> {
     name: &'lexer str,
     src: &'lexer str,
@@ -19,6 +20,11 @@ impl<'lexer> Lexer<'lexer> {
             offset: 0,
             inner: src.grapheme_indices(true).peekable(),
         }
+    }
+
+    pub fn peek(&self) -> Option<<Self as Iterator>::Item> {
+        let mut cloned = self.clone();
+        cloned.next()
     }
 
     fn lex(&mut self) -> Option<<Self as Iterator>::Item> {
@@ -104,5 +110,14 @@ mod test {
         for token in lexer {
             println!("{:#?}", token)
         }
+    }
+
+    #[test]
+    fn peek_test() {
+        let mut lexer = Lexer::new("main", "ΣΥΝΑΡΤΗΣΗ ΡΙΖΑ(): 2 + 2.");
+        println!("{:#?}", lexer.peek());
+        println!("{:#?}", lexer.next());
+        println!("{:#?}", lexer.peek());
+        println!("{:#?}", lexer.next());
     }
 }
