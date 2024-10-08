@@ -101,7 +101,7 @@ impl From<&str> for TokenKind {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum TokenKind {
     //Reserved Keywords
     Reserved(Reserved),
@@ -112,13 +112,13 @@ pub enum TokenKind {
     Number(i64),
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum Reserved {
     Op(Operator),
     Keyword(Keyword),
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum Operator {
     Infix(Infix),
     Postfix(Postfix),
@@ -134,7 +134,7 @@ pub enum Operator {
     SingleQ,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum Infix {
     Add,
     Sub,
@@ -142,7 +142,7 @@ pub enum Infix {
     Div,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum Postfix {
     Fact,
     Dot,
@@ -150,30 +150,30 @@ pub enum Postfix {
     Comma,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum Prefix {
     AdrOf,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum Builtin {
     Type(Type),
     Function(Function),
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum Type {
     Real,           //ΠΡΑΓΜΑΤΙΚΟΣ
     Char,           //ΧΑΡΑΚΤΗΡΑΣ
     Ptr(Box<Type>), //ex. ΠΡΑΓΜΑΤΙΚΟΣ*
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum Function {
     Print, //ΕΚΤΥΠΩΣΕ
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum Keyword {
     Procedure, //ΔΙΑΔΙΚΑΣΙΑ
     Method,    // ΜΕΘΟΔΟΣ
