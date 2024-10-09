@@ -67,7 +67,7 @@ pub trait Parser<'parser> {
 }
 
 /* Parser Errors */
-type ParserError = Box<dyn Diagnostic + Send + Sync>;
+pub type ParserError = Box<dyn Diagnostic + Send + Sync>;
 
 #[derive(Error, Diagnostic, Debug)]
 #[error("Parser 'Expected' Error")]
