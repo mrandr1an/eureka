@@ -231,7 +231,7 @@ mod test {
 
     use super::{either, expect, Paired, Parser, ParserError, ParserR, TokenParser};
 
-    fn some_parser<'parser>(mut input: Lexer<'parser>) -> ParserR<'parser, String, ParserError> {
+    fn some_parser(mut input: Lexer) -> ParserR<String, ParserError> {
         #[derive(Error, Diagnostic, Debug)]
         #[error("whhooops!")]
         #[diagnostic(help("Skill issue"))]
