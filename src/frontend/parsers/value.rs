@@ -1,142 +1,94 @@
-use miette::NamedSource;
-
 use crate::frontend::{
-    lexers::token::{Operator, Reserved, Token, TokenVariant},
+    lexers::{
+        lexer::Lexer,
+        token::{Operator, Reserved, TokenKind},
+    },
     syntaxtrees::{identifier::Identifier, value::Value},
 };
 
-use super::parser::{Input, ParserResult, UnexpectedEOF, ValueError};
+use super::parser::{
+    expect, Expected, Paired, Parser, ParserError, ParserR, TokenParser, UnexpectedEOF,
+};
 
-pub fn real<'parser, Language, Lexer: Iterator<Item = Token<'parser, Language>>>(
-    input: &'parser mut Input<'parser, Language, Lexer>,
-) -> ParserResult<'parser, Value, &'parser mut Input<'parser, Language, Lexer>, ValueError> {
+fn real(mut input: Lexer) -> ParserR<Value, ParserError> {
     match input.next() {
-        Some(token) => match token.kind.variant {
-            TokenVariant::Number(num) => Ok((Value::Real(num), input)),
-            _other => Err(ValueError::ExpectedReal(
-                NamedSource::new(input.name, input.src.to_string()),
-                token.lexeme.range.into(),
-            )),
+        Some(token) if token.is_num() => match token.kind {
+            TokenKind::Number(num) => Ok((Value::Real(num), input)),
+            _ => panic!("This will never happebn"),
         },
-        None => Err(ValueError::Eof(UnexpectedEOF::new(
+        Some(token) => Err(Box::new(Expected::new(
             input.name,
             input.src,
-            input.len..input.len,
-        ))),
+            token.lexeme.range,
+            token.kind,
+        )) as ParserError),
+        None => Err(Box::new(UnexpectedEOF::new(
+            input.name,
+            input.src,
+            input.offset..input.offset / 5,
+            TokenKind::Unknown,
+        )) as ParserError),
     }
 }
 
-pub fn id<'parser, Language, Lexer: Iterator<Item = Token<'parser, Language>>>(
-    input: &'parser mut Input<'parser, Language, Lexer>,
-) -> ParserResult<'parser, Value, &'parser mut Input<'parser, Language, Lexer>, ValueError> {
+fn id(mut input: Lexer) -> ParserR<Value, ParserError> {
     match input.next() {
-        Some(token) => match token.kind.variant {
-            TokenVariant::Unknown => Ok((Value::Id(Identifier(token.lexeme)), input)),
-            _other => Err(ValueError::ExpectedId(
-                NamedSource::new(input.name, input.src.to_string()),
-                token.lexeme.range.into(),
-            )),
-        },
-        None => Err(ValueError::Eof(UnexpectedEOF::new(
+        Some(token) if token.is_unknown() => Ok((Value::Id(Identifier(token.lexeme)), input)),
+        Some(token) => Err(Box::new(Expected::new(
             input.name,
             input.src,
-            input.len..input.len,
-        ))),
+            token.lexeme.range,
+            token.kind,
+        )) as ParserError),
+        None => Err(Box::new(UnexpectedEOF::new(
+            input.name,
+            input.src,
+            input.offset..input.offset / 5,
+            TokenKind::Unknown,
+        )) as ParserError),
     }
 }
 
-pub fn single_q<'parser, Language, Lexer: Iterator<Item = Token<'parser, Language>>>(
-    input: &'parser mut Input<'parser, Language, Lexer>,
-) -> ParserResult<'parser, Value, &'parser mut Input<'parser, Language, Lexer>, ValueError> {
-    match input.next() {
-        Some(token) => match token.kind.variant {
-            TokenVariant::Reserved(Reserved::Op(Operator::SingleQ)) => char(input),
-            _other => Err(ValueError::ExpectedSingleQ(
-                NamedSource::new(input.name, input.src.to_string()),
-                token.lexeme.range.into(),
-            )),
-        },
-        None => Err(ValueError::Eof(UnexpectedEOF::new(
-            input.name,
-            input.src,
-            input.len..input.len,
-        ))),
-    }
-}
-
-pub fn char<'parser, Language, Lexer: Iterator<Item = Token<'parser, Language>>>(
-    input: &'parser mut Input<'parser, Language, Lexer>,
-) -> ParserResult<'parser, Value, &'parser mut Input<'parser, Language, Lexer>, ValueError> {
-    match input.next() {
-        Some(token) => match token.kind.variant {
-            TokenVariant::Unknown | TokenVariant::Number(_) => match input.next() {
-                Some(end_char) => match end_char.kind.variant {
-                    TokenVariant::Reserved(Reserved::Op(Operator::SingleQ)) => {
-                        match token.lexeme.slice.parse::<char>() {
-                            Ok(c) => Ok((Value::Char(c), input)),
-                            Err(_) => Err(ValueError::ExpectedChar(
-                                NamedSource::new(input.name, input.src.to_string()),
-                                token.lexeme.range.into(),
-                            )),
-                        }
-                    }
-                    _ => Err(ValueError::ExpectedSingleQ(
-                        NamedSource::new(input.name, input.src.to_string()),
-                        end_char.lexeme.range.into(),
-                    )),
-                },
-                None => Err(ValueError::Eof(UnexpectedEOF::new(
-                    input.name,
-                    input.src,
-                    input.len..input.len,
-                ))),
-            },
-            _other => Err(ValueError::ExpectedChar(
-                NamedSource::new(input.name, input.src.to_string()),
-                token.lexeme.range.into(),
-            )),
-        },
-        None => Err(ValueError::Eof(UnexpectedEOF::new(
-            input.name,
-            input.src,
-            input.len..input.len,
-        ))),
-    }
+fn char(input: Lexer) -> ParserR<Value, ParserError> {
+    expect("'")
+        .pair(expect(TokenKind::Unknown))
+        .then_expect_ignore(TokenKind::Reserved(Reserved::Op(Operator::SingleQ)))
+        .right()
+        .map(|token| match token.lexeme.slice.parse::<char>() {
+            Ok(c) => Value::Char(c),
+            Err(e) => todo!(),
+        })
+        .parse(input)
 }
 
 #[cfg(test)]
 mod test {
-    use crate::frontend::{
-        lexers::lexer::Tokens,
-        parsers::{
-            parser::{pair, Parser},
-            value::single_q,
-        },
-        syntaxtrees::value::Value,
-    };
 
-    use super::{char, id, real};
+    use super::char;
+    use super::id;
+    use super::Parser;
+    use crate::frontend::lexers::lexer::Lexer;
+    use crate::frontend::syntaxtrees::value::Value;
 
     #[test]
-    fn parse_value() {
-        let mut lexer = Tokens::new("534", "main.eur");
-        assert_eq!(real.parse(&mut lexer).unwrap().0, Value::Real(534))
-    }
-
-    #[test]
-    fn parse_char() -> miette::Result<()> {
-        let mut lexer = Tokens::new("'5'", "main.eur");
-        assert_eq!(single_q.parse(&mut lexer).unwrap().0, Value::Char('5'));
+    fn parse_id() -> miette::Result<()> {
+        let lexer = Lexer::new("main.eur", "hello");
+        match id.parse(lexer) {
+            Ok((Value::Id(id), _)) => assert_eq!(id.0.slice, "hello"),
+            Err(err) => return Err(miette::Report::new_boxed(err)),
+            _ => todo!(),
+        };
         Ok(())
     }
 
     #[test]
-    fn parse_both() -> miette::Result<()> {
-        let mut lexer = Tokens::new("someid 'a'", "main.eur");
-        match pair(id, single_q).parse(&mut lexer) {
-            Ok(i) => println!("{} {}", i.0 .0, i.0 .1),
-            Err(err) => return Err(err.into()),
-        }
+    fn parse_char() -> miette::Result<()> {
+        let lexer = Lexer::new("main.eur", "'c'");
+        match char.parse(lexer) {
+            Ok((Value::Char(ch), _)) => assert_eq!(ch, 'c'),
+            Err(err) => return Err(miette::Report::new_boxed(err)),
+            _ => todo!(),
+        };
         Ok(())
     }
 }
