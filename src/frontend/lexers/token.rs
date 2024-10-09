@@ -67,6 +67,14 @@ impl<'a> Token<'a> {
     pub fn is_keyword(&self) -> bool {
         matches!(self.kind, TokenKind::Reserved(Reserved::Keyword(_)))
     }
+
+    pub fn is_num(&self) -> bool {
+        matches!(self.kind, TokenKind::Number(_))
+    }
+
+    pub fn is_unknown(&self) -> bool {
+        matches!(self.kind, TokenKind::Unknown)
+    }
 }
 
 impl From<&str> for TokenKind {
