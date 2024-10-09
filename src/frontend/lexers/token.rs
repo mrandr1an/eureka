@@ -55,6 +55,18 @@ impl<'a> Token<'a> {
             kind: TokenKind::from(slice),
         }
     }
+
+    pub fn is_op(&self) -> bool {
+        matches!(self.kind, TokenKind::Reserved(Reserved::Op(_)))
+    }
+
+    pub fn is_reserved(&self) -> bool {
+        matches!(self.kind, TokenKind::Reserved(_))
+    }
+
+    pub fn is_keyword(&self) -> bool {
+        matches!(self.kind, TokenKind::Reserved(Reserved::Keyword(_)))
+    }
 }
 
 impl From<&str> for TokenKind {
