@@ -7,7 +7,7 @@ use crate::frontend::{
 };
 
 use super::parser::{
-    expect, Expected, Paired, Parser, ParserError, ParserR, TokenParser, UnexpectedEOF,
+    either, just, Expected, Paired, Parser, ParserError, ParserR, TokenParser, UnexpectedEOF,
 };
 
 fn real(mut input: Lexer) -> ParserR<Value, ParserError> {
@@ -50,8 +50,8 @@ fn id(mut input: Lexer) -> ParserR<Value, ParserError> {
 }
 
 fn char(input: Lexer) -> ParserR<Value, ParserError> {
-    expect("'")
-        .pair(expect(TokenKind::Unknown))
+    just("'")
+        .pair(just(TokenKind::Unknown))
         .then_expect_ignore(TokenKind::Reserved(Reserved::Op(Operator::SingleQ)))
         .right()
         .map(|token| match token.lexeme.slice.parse::<char>() {
@@ -61,13 +61,22 @@ fn char(input: Lexer) -> ParserR<Value, ParserError> {
         .parse(input)
 }
 
+pub fn value(input: Lexer) -> ParserR<Value, ParserError> {
+    either(real, char)
+        .or(id)
+        .map(|a| a.map_or_else(|val| val, |wrapped| wrapped.unwrap_or_else(|val| val)))
+        .parse(input)
+}
+
 #[cfg(test)]
 mod test {
 
     use super::char;
     use super::id;
+    use super::value;
     use super::Parser;
     use crate::frontend::lexers::lexer::Lexer;
+    use crate::frontend::parsers::parser::either;
     use crate::frontend::syntaxtrees::value::Value;
 
     #[test]
@@ -86,6 +95,28 @@ mod test {
         let lexer = Lexer::new("main.eur", "'c'");
         match char.parse(lexer) {
             Ok((Value::Char(ch), _)) => assert_eq!(ch, 'c'),
+            Err(err) => return Err(miette::Report::new_boxed(err)),
+            _ => todo!(),
+        };
+        Ok(())
+    }
+
+    #[test]
+    fn either_char_id() -> miette::Result<()> {
+        let lexer = Lexer::new("main.eur", "'c'");
+        match either(char, id).parse(lexer) {
+            Ok((Ok(ch), _)) => assert_eq!(ch, Value::Char('c')),
+            Err(err) => return Err(miette::Report::new_boxed(err)),
+            _ => todo!(),
+        };
+        Ok(())
+    }
+
+    #[test]
+    fn parse_value() -> miette::Result<()> {
+        let lexer = Lexer::new("main.eur", "'c' 5");
+        match value.pair(value).parse(lexer) {
+            Ok(((Value::Char(ch), Value::Real(num)), _)) => assert_eq!((ch, num), ('c', 5)),
             Err(err) => return Err(miette::Report::new_boxed(err)),
             _ => todo!(),
         };
