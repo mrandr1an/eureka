@@ -1,5 +1,7 @@
 use std::fmt::{Debug, Display};
 
+use crate::frontend::lexers::token::Operator as OpToken;
+
 use super::{value::Value, variable::Variable};
 
 pub struct Expr<'a> {
@@ -56,11 +58,20 @@ pub enum BinOp {
     Div,
 }
 
+impl BinOp {
+    pub fn bp(&self) -> (u8, u8) {
+        match self {
+            Self::Add | Self::Sub => (1, 2),
+            Self::Mul | Self::Div => (3, 4),
+        }
+    }
+}
+
 impl Display for BinOp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Add => write!(f, "+"),
-            Self::Sub => write!(f, "+"),
+            Self::Sub => write!(f, "-"),
             Self::Mul => write!(f, "*"),
             Self::Div => write!(f, "/"),
         }
@@ -98,12 +109,23 @@ impl<'a> Debug for Binary<'a> {
 
 pub enum PrefixOp {
     Goto,
+    AdrOf,
+}
+
+impl PrefixOp {
+    pub fn bp(&self) -> ((), u8) {
+        match self {
+            Self::Goto => ((), 1),
+            Self::AdrOf => ((), 6),
+        }
+    }
 }
 
 impl Display for PrefixOp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Goto => write!(f, "ΠΗΓΑΙΝΕ "),
+            Self::AdrOf => write!(f, "ΔΙΕΥΘΥΝΣΗ "),
         }
     }
 }
@@ -128,6 +150,15 @@ impl<'a> Debug for UnaryLHS<'a> {
 pub enum PostfixOp<'a> {
     Fact,
     Call(Vec<Value<'a>>),
+}
+
+impl<'a> PostfixOp<'a> {
+    pub fn bp(&self) -> (u8, ()) {
+        match self {
+            Self::Call(_) => (16, ()),
+            Self::Fact => (5, ()),
+        }
+    }
 }
 
 impl<'a> Display for PostfixOp<'a> {
@@ -189,5 +220,31 @@ impl<'a> Display for Assign<'a> {
 impl<'a> Debug for Assign<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "<Assign {}<={}>", self.var, self.expr)
+    }
+}
+
+pub enum Operator<'a> {
+    Pre(PrefixOp),
+    Post(PostfixOp<'a>),
+    Mid(BinOp),
+}
+
+impl<'a> Operator<'a> {
+    pub fn bp(&self) -> (Option<u8>, Option<u8>) {
+        match self {
+            Self::Pre(pre) => (None, Some(pre.bp().1)),
+            Self::Post(post) => (Some(post.bp().0), None),
+            Self::Mid(bin) => (Some(bin.bp().0), Some(bin.bp().1)),
+        }
+    }
+}
+
+impl<'a> Display for Operator<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Pre(pre) => write!(f, "{pre}"),
+            Self::Post(post) => write!(f, "{post}"),
+            Self::Mid(bin) => write!(f, "{bin}"),
+        }
     }
 }
