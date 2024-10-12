@@ -60,6 +60,27 @@ impl<'a> Token<'a> {
         matches!(self.kind, TokenKind::Reserved(Reserved::Op(_)))
     }
 
+    pub fn is_prefix(&self) -> bool {
+        matches!(
+            self.kind,
+            TokenKind::Reserved(Reserved::Op(Operator::Prefix(_)))
+        )
+    }
+
+    pub fn is_postfix(&self) -> bool {
+        matches!(
+            self.kind,
+            TokenKind::Reserved(Reserved::Op(Operator::Postfix(_)))
+        )
+    }
+
+    pub fn is_midfix(&self) -> bool {
+        matches!(
+            self.kind,
+            TokenKind::Reserved(Reserved::Op(Operator::Infix(_)))
+        )
+    }
+
     pub fn is_reserved(&self) -> bool {
         matches!(self.kind, TokenKind::Reserved(_))
     }
