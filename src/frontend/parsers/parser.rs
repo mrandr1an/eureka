@@ -123,7 +123,7 @@ where
 }
 
 /* Primitive Parsers */
-pub fn expect<'parser, T: Into<TokenKind> + Clone>(
+pub fn just<'parser, T: Into<TokenKind> + Clone>(
     kind: T,
 ) -> impl Parser<'parser, Output = Token<'parser>> {
     move |mut input: Lexer<'parser>| match input.peek() {
@@ -147,6 +147,13 @@ pub fn expect<'parser, T: Into<TokenKind> + Clone>(
             kind.clone().into(),
         )) as ParserError),
     }
+}
+
+pub fn expect<'parser, P>(p: P) -> impl Parser<'parser, Output = P::Output>
+where
+    P: Parser<'parser>,
+{
+    move |input: Lexer<'parser>| p.parse(input)
 }
 
 pub fn either<'parser, P1, P2>(
@@ -219,6 +226,17 @@ impl<'parser, Left, Right, P: Parser<'parser, Output = (Left, Right)>> Paired<'p
 {
 }
 
+pub trait Flatten<'parser, T>: Parser<'parser, Output = Result<T, T>> {
+    fn flatten(&self) -> impl Parser<'parser, Output = T> {
+        move |input| match self.parse(input) {
+            Ok((output, rest)) => Ok((output.unwrap_or_else(|a| a), rest)),
+            Err(err) => Err(err),
+        }
+    }
+}
+
+impl<'parser, T, P> Flatten<'parser, T> for P where P: Parser<'parser, Output = Result<T, T>> {}
+
 /*Parser Lib Tests*/
 #[cfg(test)]
 mod test {
@@ -229,7 +247,7 @@ mod test {
 
     use crate::frontend::lexers::{lexer::Lexer, token::TokenKind};
 
-    use super::{either, expect, Paired, Parser, ParserError, ParserR, TokenParser};
+    use super::{either, expect, just, Paired, Parser, ParserError, ParserR, TokenParser};
 
     fn some_parser(mut input: Lexer) -> ParserR<String, ParserError> {
         #[derive(Error, Diagnostic, Debug)]
@@ -333,7 +351,7 @@ mod test {
     #[should_panic]
     fn expect_parser() {
         let lexer = Lexer::new("main.eur", "5 friend ignored_token");
-        let res = match expect(TokenKind::Unknown).parse(lexer) {
+        let res = match just(TokenKind::Unknown).parse(lexer) {
             Ok((token, _)) => Ok(println!("{:#?}", token)),
             Err(err) => Err(miette::Report::new_boxed(err)),
         };
@@ -343,7 +361,7 @@ mod test {
     #[test]
     fn or_parser_1() -> miette::Result<()> {
         let lexer = Lexer::new("main.eur", "test or parser");
-        match some_parser.or(expect(TokenKind::Number(10))).parse(lexer) {
+        match some_parser.or(just(TokenKind::Number(10))).parse(lexer) {
             Ok((token, _)) => assert_eq!("test".to_string(), token.unwrap()),
             Err(err) => return Err(miette::Report::new_boxed(err)),
         }
@@ -353,7 +371,7 @@ mod test {
     #[test]
     fn or_parser_2() -> miette::Result<()> {
         let lexer = Lexer::new("main.eur", "10 or test");
-        match some_parser.or(expect(TokenKind::Number(10))).parse(lexer) {
+        match some_parser.or(just(TokenKind::Number(10))).parse(lexer) {
             Ok((token, _)) => assert_eq!(TokenKind::Number(10), token.unwrap_err().kind),
             Err(err) => return Err(miette::Report::new_boxed(err)),
         }
@@ -364,7 +382,7 @@ mod test {
     #[should_panic]
     fn or_parser() {
         let lexer = Lexer::new("main.eur", "10 or test");
-        let res = match some_parser.or(expect(TokenKind::Number(10))).parse(lexer) {
+        let res = match some_parser.or(just(TokenKind::Number(10))).parse(lexer) {
             Ok((token, _)) => Ok(assert_eq!(TokenKind::Number(12), token.unwrap_err().kind)),
             Err(err) => Err(miette::Report::new_boxed(err)),
         };
@@ -380,7 +398,7 @@ mod test {
                 .pair(some_parser)
                 .then_expect_ignore(TokenKind::Unknown)
                 .left(),
-            expect(TokenKind::Unknown),
+            just(TokenKind::Unknown),
         )
         .parse(lexer)
         {
@@ -399,7 +417,7 @@ mod test {
                 .pair(some_parser)
                 .then_expect_ignore(TokenKind::Unknown)
                 .left(),
-            expect(TokenKind::Number(10)),
+            just(TokenKind::Number(10)),
         )
         .parse(lexer)
         {
