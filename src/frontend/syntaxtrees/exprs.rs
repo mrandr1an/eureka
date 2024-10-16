@@ -1,8 +1,7 @@
 use std::fmt::{Debug, Display};
 
-use crate::frontend::lexers::token::Operator as OpToken;
-
 use super::{value::Value, variable::Variable};
+use crate::frontend::parsers::expr::S;
 
 pub struct Expr<'a> {
     variant: ExprVariant<'a>,
@@ -27,14 +26,54 @@ pub enum ExprVariant<'a> {
     Id(Value<'a>),
 }
 
+impl<'a> ExprVariant<'a> {
+    pub fn new(s: S<'a>) -> Self {
+        match s {
+            S::Atom(value) => ExprVariant::Id(value),
+            S::Cons(op, sexprs) => {
+                if sexprs.len() > 2 {
+                    panic!("Len cannot be more than 2");
+                } else {
+                    let mut s_iter = sexprs.into_iter();
+                    match op {
+                        Operator::Mid(mid) => {
+                            let lhs = s_iter.next().unwrap();
+                            let rhs = s_iter.next().unwrap();
+                            ExprVariant::Binary(Binary {
+                                lhs: Box::new(Self::new(lhs)),
+                                op: mid,
+                                rhs: Box::new(Self::new(rhs)),
+                            })
+                        }
+                        Operator::Post(post) => {
+                            let lhs = s_iter.next().unwrap();
+                            ExprVariant::UnaryRHS(UnaryRHS {
+                                lhs: Box::new(Self::new(lhs)),
+                                op: post,
+                            })
+                        }
+                        Operator::Pre(pre) => {
+                            let rhs = s_iter.next().unwrap();
+                            ExprVariant::UnaryLHS(UnaryLHS {
+                                rhs: Box::new(Self::new(rhs)),
+                                op: pre,
+                            })
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 impl<'a> Display for ExprVariant<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Assign(a) => write!(f, "({a})"),
-            Self::Binary(b) => write!(f, "({b})"),
-            Self::Id(i) => write!(f, "({i})"),
-            Self::UnaryLHS(u) => write!(f, "({u})"),
-            Self::UnaryRHS(u) => write!(f, "({})", u),
+            Self::Assign(a) => writeln!(f, "{a}"),
+            Self::Binary(b) => writeln!(f, "{b}"),
+            Self::Id(i) => writeln!(f, "{i}"),
+            Self::UnaryLHS(u) => writeln!(f, "{u}"),
+            Self::UnaryRHS(u) => writeln!(f, "{}", u),
         }
     }
 }
@@ -155,8 +194,8 @@ pub enum PostfixOp<'a> {
 impl<'a> PostfixOp<'a> {
     pub fn bp(&self) -> (u8, ()) {
         match self {
-            Self::Call(_) => (16, ()),
-            Self::Fact => (5, ()),
+            Self::Call(_) => (8, ()),
+            Self::Fact => (7, ()),
         }
     }
 }
@@ -166,9 +205,11 @@ impl<'a> Display for PostfixOp<'a> {
         match self {
             Self::Fact => write!(f, "!"),
             Self::Call(params) => {
+                write!(f, "<Params ")?;
                 for val in params {
                     let _ = write!(f, "{val} ");
                 }
+                write!(f, ">")?;
                 Ok(())
             }
         }

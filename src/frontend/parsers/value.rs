@@ -1,124 +1,117 @@
+use miette::Diagnostic;
+use thiserror::Error;
+
 use crate::frontend::{
-    lexers::{
-        lexer::Lexer,
-        token::{Operator, Reserved, TokenKind},
-    },
+    lexers::{lexer::Lexer, token::TokenKind},
     syntaxtrees::{identifier::Identifier, value::Value},
 };
 
-use super::parser::{
-    either, just, Expected, Paired, Parser, ParserError, ParserR, TokenParser, UnexpectedEOF,
+use super::lib::{
+    error::{Expected, ParserError, Perror, UnexpectedEOF},
+    parser::{either, just, Combinator, Flatten, Pair, Parser},
+    result::ParserR,
 };
 
-fn real(mut input: Lexer) -> ParserR<Value, ParserError> {
-    match input.next() {
-        Some(token) if token.is_num() => match token.kind {
-            TokenKind::Number(num) => Ok((Value::Real(num), input)),
-            _ => panic!("This will never happebn"),
-        },
-        Some(token) => Err(Box::new(Expected::new(
-            input.name,
-            input.src,
+pub fn real(mut input: Lexer) -> ParserR<Value, Perror> {
+    match input.peek() {
+        Some(token) if token.is_num() => {
+            input.next();
+            match token.kind {
+                TokenKind::Number(num) => ParserR::Ok((Value::Real(num), input)),
+                _ => panic!("will never happebn"),
+            }
+        }
+        Some(token) => ParserR::Err(Box::new(Expected::new(
+            &input,
             token.lexeme.range,
+            TokenKind::Number(0),
             token.kind,
-        )) as ParserError),
-        None => Err(Box::new(UnexpectedEOF::new(
-            input.name,
-            input.src,
-            input.offset..input.offset / 5,
-            TokenKind::Unknown,
-        )) as ParserError),
+        )) as Perror),
+        None => ParserR::Err(Box::new(UnexpectedEOF::new(&input, TokenKind::Number(0))) as Perror),
     }
 }
 
-fn id(mut input: Lexer) -> ParserR<Value, ParserError> {
-    match input.next() {
-        Some(token) if token.is_unknown() => Ok((Value::Id(Identifier(token.lexeme)), input)),
-        Some(token) => Err(Box::new(Expected::new(
-            input.name,
-            input.src,
-            token.lexeme.range,
-            token.kind,
-        )) as ParserError),
-        None => Err(Box::new(UnexpectedEOF::new(
-            input.name,
-            input.src,
-            input.offset..input.offset / 5,
-            TokenKind::Unknown,
-        )) as ParserError),
+pub fn id(input: Lexer) -> ParserR<Value, Perror> {
+    just(TokenKind::Unknown)
+        .map(|token| Value::Id(Identifier(token.lexeme)))
+        .parse(input)
+}
+
+#[derive(Debug, Error, Diagnostic)]
+#[error("expected a char you idiot")]
+#[diagnostic(help("get good"))]
+pub struct CharError {}
+
+impl ParserError for CharError {
+    fn boxed(self) -> Box<dyn Diagnostic + Send + Sync> {
+        Box::new(self)
+    }
+
+    fn report(self) -> miette::Report {
+        miette::Report::new(self)
     }
 }
 
-fn char(input: Lexer) -> ParserR<Value, ParserError> {
+pub fn char(input: Lexer) -> ParserR<Value, Perror> {
     just("'")
-        .pair(just(TokenKind::Unknown))
-        .then_expect_ignore(TokenKind::Reserved(Reserved::Op(Operator::SingleQ)))
+        .then(just(TokenKind::Unknown))
         .right()
-        .map(|token| match token.lexeme.slice.parse::<char>() {
-            Ok(c) => Value::Char(c),
-            Err(e) => todo!(),
+        .then_ignore(just("'"))
+        .map_or(|token| match token.lexeme.slice.parse::<char>() {
+            Ok(c) => Ok(Value::Char(c)),
+            Err(_) => Err(CharError {}),
         })
         .parse(input)
 }
 
-pub fn value(input: Lexer) -> ParserR<Value, ParserError> {
-    either(real, char)
-        .or(id)
-        .map(|a| a.map_or_else(|val| val, |wrapped| wrapped.unwrap_or_else(|val| val)))
-        .parse(input)
+pub fn value(input: Lexer) -> ParserR<Value, Perror> {
+    either(real, id).flatten().or(char).flatten().parse(input)
 }
 
 #[cfg(test)]
 mod test {
-
-    use super::char;
-    use super::id;
-    use super::value;
-    use super::Parser;
-    use crate::frontend::lexers::lexer::Lexer;
-    use crate::frontend::parsers::parser::either;
-    use crate::frontend::syntaxtrees::value::Value;
+    use super::{char, id, real};
+    use crate::frontend::parsers::lib::error::ParserError;
+    use crate::frontend::parsers::lib::parser::Parser;
+    use crate::frontend::{lexers::lexer::Lexer, parsers::lib::result::ParserR};
 
     #[test]
     fn parse_id() -> miette::Result<()> {
-        let lexer = Lexer::new("main.eur", "hello");
+        let lexer = Lexer::new("main", "hello");
         match id.parse(lexer) {
-            Ok((Value::Id(id), _)) => assert_eq!(id.0.slice, "hello"),
-            Err(err) => return Err(miette::Report::new_boxed(err)),
-            _ => todo!(),
+            ParserR::Ok((id, _rest)) => assert_eq!(id.to_string(), "<Value hello>"),
+            ParserR::Err(err) => return Err(err.report()),
+        };
+        Ok(())
+    }
+
+    #[test]
+    #[should_panic]
+    fn parse_id_fail() {
+        let lexer = Lexer::new("main", "32");
+        let wrapped = match id.parse(lexer) {
+            ParserR::Ok((id, _rest)) => Ok(assert_eq!(id.to_string(), "<Value hello>")),
+            ParserR::Err(err) => Err(err.report()),
+        };
+        wrapped.unwrap()
+    }
+
+    #[test]
+    fn parse_real() -> miette::Result<()> {
+        let lexer = Lexer::new("main", "451");
+        match real.parse(lexer) {
+            ParserR::Ok((id, _rest)) => assert_eq!(id.to_string(), "<Value Real 451>"),
+            ParserR::Err(err) => return Err(err.report()),
         };
         Ok(())
     }
 
     #[test]
     fn parse_char() -> miette::Result<()> {
-        let lexer = Lexer::new("main.eur", "'c'");
+        let lexer = Lexer::new("main", "'h'");
         match char.parse(lexer) {
-            Ok((Value::Char(ch), _)) => assert_eq!(ch, 'c'),
-            Err(err) => return Err(miette::Report::new_boxed(err)),
-            _ => todo!(),
-        };
-        Ok(())
-    }
-
-    #[test]
-    fn either_char_id() -> miette::Result<()> {
-        let lexer = Lexer::new("main.eur", "'c'");
-        match either(char, id).parse(lexer) {
-            Ok((Ok(ch), _)) => assert_eq!(ch, Value::Char('c')),
-            Err(err) => return Err(miette::Report::new_boxed(err)),
-            _ => todo!(),
-        };
-        Ok(())
-    }
-
-    #[test]
-    fn parse_value() -> miette::Result<()> {
-        let lexer = Lexer::new("main.eur", "'c' 5");
-        match value.pair(value).parse(lexer) {
-            Ok(((Value::Char(ch), Value::Real(num)), _)) => assert_eq!((ch, num), ('c', 5)),
-            Err(err) => return Err(miette::Report::new_boxed(err)),
-            _ => todo!(),
+            ParserR::Ok((id, _rest)) => assert_eq!(id.to_string(), "<Value Char h>"),
+            ParserR::Err(err) => return Err(err.report()),
         };
         Ok(())
     }
