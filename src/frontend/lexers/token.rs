@@ -1,4 +1,4 @@
-use std::ops::Range;
+use std::{fmt::Display, ops::Range};
 
 pub trait TokenDelim {
     fn is_delim(&self) -> bool;
@@ -24,12 +24,13 @@ impl TokenDelim for &str {
                 | &"\""
                 | &"'"
                 | &"="
+                | &"&"
         )
     }
 }
 
 ///Contains the range of the original string where the substring "lexeme" resides
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Lexeme<'a> {
     //a..b where a is the first character and b is the last character of lexeme
     pub range: Range<usize>,
@@ -42,7 +43,7 @@ impl<'a> Lexeme<'a> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Token<'a> {
     pub lexeme: Lexeme<'a>,
     pub kind: TokenKind,
@@ -224,4 +225,10 @@ pub enum Keyword {
     Goto,      //ϰ
     Aggregate, //ΣΥΝΕΝΩΣΗ
     Sum,       //ΑΘΡΟΙΣΜΑ
+}
+
+impl Display for TokenKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:#?}", self)
+    }
 }

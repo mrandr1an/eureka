@@ -4,7 +4,13 @@ use unicode_segmentation::{GraphemeIndices, UnicodeSegmentation};
 
 use super::token::{Token, TokenDelim};
 
-#[derive(Clone)]
+pub struct Split<'lexer> {
+    inner: Lexer<'lexer>,
+}
+
+impl<'lexer> Split<'lexer> {}
+
+#[derive(Clone, Debug)]
 pub struct Lexer<'lexer> {
     pub name: &'lexer str,
     pub src: &'lexer str,
@@ -107,6 +113,14 @@ mod test {
     #[test]
     fn lex() {
         let lexer = Lexer::new("main", "ΣΥΝΑΡΤΗΣΗ ΡΙΖΑ(): 2 + 2.");
+        for token in lexer {
+            println!("{:#?}", token)
+        }
+    }
+
+    #[test]
+    fn addr() {
+        let lexer = Lexer::new("main", "&hello");
         for token in lexer {
             println!("{:#?}", token)
         }
